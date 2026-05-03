@@ -54,7 +54,7 @@ async def drm_handler(bot: Client, m: Message, custom_token: str = ""): # <--- A
     cptoken = globals.cptoken
     
     # Use the custom token if provided, otherwise fallback to the global one
-    jw_token = custom_token if custom_token else globals.pwtoken 
+    pwtoken = custom_token if custom_token else globals.pwtoken 
     vidwatermark = globals.vidwatermark
     raw_text2 = globals.raw_text2
     quality = globals.quality
