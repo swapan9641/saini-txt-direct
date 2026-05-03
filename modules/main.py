@@ -193,22 +193,29 @@ def notify_owner():
 def reset_and_set_commands():
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/setMyCommands"
 
-        # General users ke liye commands
+    # General users ke liye commands
     general_commands = [
         {"command": "start", "description": "✅ Check Alive the Bot"},
         {"command": "stop", "description": "🚫 Stop the ongoing process"},
         {"command": "id", "description": "🆔 Get Your ID"},
         {"command": "info", "description": "ℹ️ Check Your Information"},
-        
-        # Add this line right here:
         {"command": "drm", "description": "🔐 Download DRM Content"}, 
-        
         {"command": "cookies", "description": "📁 Upload YT Cookies"},
         {"command": "y2t", "description": "🔪 YouTube → .txt Converter"},
         {"command": "ytm", "description": "🎶 YouTube → .mp3 downloader"},
         {"command": "t2t", "description": "📟 Text → .txt Generator"},
         {"command": "t2h", "description": "🌐 .txt → .html Converter"},
         {"command": "logs", "description": "👁️ View Bot Activity"},
+    ]
+    
+    # Owner ke liye extra commands (THIS WAS MISSING!)
+    owner_commands = general_commands + [
+        {"command": "broadcast", "description": "📢 Broadcast to All Users"},
+        {"command": "broadusers", "description": "👨‍❤️‍👨 All Broadcasting Users"},
+        {"command": "addauth", "description": "▶️ Add Authorisation"},
+        {"command": "rmauth", "description": "⏸️ Remove Authorisation "},
+        {"command": "users", "description": "👨‍👨‍👧‍👦 All Premium Users"},
+        {"command": "reset", "description": "✅ Reset the Bot"}
     ]
 
     # General users ke liye set commands (scope default)
@@ -224,7 +231,7 @@ def reset_and_set_commands():
         "scope": {"type": "chat", "chat_id": OWNER},  # OWNER variable me chat id hona chahiye
         "language_code": "en"
     })
-    
+
 if __name__ == "__main__":
     reset_and_set_commands()
     notify_owner() 
