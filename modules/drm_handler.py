@@ -551,6 +551,44 @@ async def drm_handler(bot: Client, m: Message):
 
 #============================================================================================================
 def register_drm_handlers(bot):
-    @bot.on_message(filters.private & (filters.document | filters.text))
+    @bot.on_message(filters.command("drm") & filters.private)
     async def call_drm_handler(bot: Client, m: Message):
-        await drm_handler(bot, m)
+        
+        # 1. If user replied to a file with /drm
+        if m.reply_to_message and (m.reply_to_message.document or m.reply_to_message.text):
+            await drm_handler(bot, m.reply_to_message)
+            return
+
+        # 2. If user sent a link directly with the command (e.g., /drm https://link)
+        if len(m.command) > 1:
+            m.text = m.text.split(" ", 1) # Remove the "/drm" part
+            await drm_handler(bot, m)
+            return
+
+        # 3. Otherwise, ASK the user to upload the DRM file
+        ask_msg = await m.reply_text(
+            "📂 **Please send your DRM `.txt` file or a DRM link now.**\n\n"
+            "*(Send /stop to cancel)*"
+        )
+        
+        try:
+            # Wait for the user to upload the file or send a link (Timeout after 60 seconds)
+            user_input: Message = await bot.listen(
+                m.chat.id, 
+                filters=filters.user(m.from_user.id) & (filters.document | filters.text), 
+                timeout=60
+            )
+            
+            # Cancel process if user sends /stop
+            if user_input.text and user_input.text.strip() == "/stop":
+                await ask_msg.delete()
+                await user_input.reply_text("🚫 DRM process cancelled.")
+                return
+            
+            await ask_msg.delete()
+            
+            # Pass the newly uploaded file/link to the DRM handler
+            await drm_handler(bot, user_input)
+            
+        except asyncio.TimeoutError:
+            await ask_msg.edit_text("⏳ **Timeout!** You took too long to send the file. Please send `/drm` to try again.")
