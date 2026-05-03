@@ -554,41 +554,55 @@ def register_drm_handlers(bot):
     @bot.on_message(filters.command("drm") & filters.private)
     async def call_drm_handler(bot: Client, m: Message):
         
-        # 1. If user replied to a file with /drm
+        # 1. Determine the target file/link
         if m.reply_to_message and (m.reply_to_message.document or m.reply_to_message.text):
-            await drm_handler(bot, m.reply_to_message)
-            return
+            target_msg = m.reply_to_message
+        elif len(m.command) > 1:
+            m.text = m.text.split(" ", 1) 
+            target_msg = m
+        else:
+            ask_msg = await m.reply_text("📂 **Please send your DRM `.txt` file or a DRM link now.**\n*(Send /stop to cancel)*")
+            try:
+                target_msg = await bot.listen(
+                    m.chat.id, 
+                    filters=filters.user(m.from_user.id) & (filters.document | filters.text), 
+                    timeout=60
+                )
+                if target_msg.text and target_msg.text.strip() == "/stop":
+                    await ask_msg.delete()
+                    await target_msg.reply_text("🚫 DRM process cancelled.")
+                    return
+                await ask_msg.delete()
+            except asyncio.TimeoutError:
+                await ask_msg.edit_text("⏳ **Timeout!** Please send `/drm` to try again.")
+                return
 
-        # 2. If user sent a link directly with the command (e.g., /drm https://link)
-        if len(m.command) > 1:
-            m.text = m.text.split(" ", 1) # Remove the "/drm" part
-            await drm_handler(bot, m)
-            return
-
-        # 3. Otherwise, ASK the user to upload the DRM file
-        ask_msg = await m.reply_text(
-            "📂 **Please send your DRM `.txt` file or a DRM link now.**\n\n"
-            "*(Send /stop to cancel)*"
+        # 2. Ask for the JW Token
+        ask_token_msg = await bot.send_message(
+            m.chat.id, 
+            "🔑 **Please send the JW Sign Token (JWT) for this file.**\n\n"
+            "*(If no token is needed for this batch, just send /skip)*"
         )
-        
         try:
-            # Wait for the user to upload the file or send a link (Timeout after 60 seconds)
-            user_input: Message = await bot.listen(
+            token_input = await bot.listen(
                 m.chat.id, 
-                filters=filters.user(m.from_user.id) & (filters.document | filters.text), 
+                filters=filters.text & filters.user(m.from_user.id), 
                 timeout=60
             )
             
-            # Cancel process if user sends /stop
-            if user_input.text and user_input.text.strip() == "/stop":
-                await ask_msg.delete()
-                await user_input.reply_text("🚫 DRM process cancelled.")
+            if token_input.text.strip() == "/stop":
+                await ask_token_msg.delete()
+                await token_input.reply_text("🚫 DRM process cancelled.")
                 return
+                
+            custom_jwt_token = ""
+            if token_input.text.strip() != "/skip":
+                custom_jwt_token = token_input.text.strip()
+                
+            await ask_token_msg.delete()
             
-            await ask_msg.delete()
-            
-            # Pass the newly uploaded file/link to the DRM handler
-            await drm_handler(bot, user_input)
+            # 3. Send both the file and the custom token to the handler
+            await drm_handler(bot, target_msg, custom_token=custom_jwt_token)
             
         except asyncio.TimeoutError:
-            await ask_msg.edit_text("⏳ **Timeout!** You took too long to send the file. Please send `/drm` to try again.")
+            await ask_token_msg.edit_text("⏳ **Timeout!** Please send `/drm` to try again.")
