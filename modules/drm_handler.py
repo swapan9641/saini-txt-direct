@@ -43,8 +43,7 @@ from vars import api_url, api_token
 
 # .....,.....,.......,...,.......,....., .....,.....,.......,...,.......,.....,
 
-
-async def drm_handler(bot: Client, m: Message):
+async def drm_handler(bot: Client, m: Message, custom_token: str = ""): # <--- Added custom_token here
     globals.processing_request = True
     globals.cancel_requested = False
     caption = globals.caption
@@ -53,7 +52,9 @@ async def drm_handler(bot: Client, m: Message):
     CR = globals.CR
     cwtoken = globals.cwtoken
     cptoken = globals.cptoken
-    pwtoken = globals.pwtoken
+    
+    # Use the custom token if provided, otherwise fallback to the global one
+    jw_token = custom_token if custom_token else globals.pwtoken 
     vidwatermark = globals.vidwatermark
     raw_text2 = globals.raw_text2
     quality = globals.quality
